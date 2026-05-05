@@ -82,24 +82,23 @@ class LivenessProcessor(VideoProcessorBase):
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 
+turn_urls = os.getenv("TURN_URLS", "")
+turn_username = os.getenv("TURN_USERNAME")
+turn_credential = os.getenv("TURN_CREDENTIAL")
+
 ice_servers = [
     {
         "urls": [
             "stun:stun.relay.metered.ca:80",
             "stun:stun.l.google.com:19302",
-            "stun:stun1.l.google.com:19302",
         ]
     }
 ]
 
-turn_url = os.getenv("TURN_URL")
-turn_username = os.getenv("TURN_USERNAME")
-turn_credential = os.getenv("TURN_CREDENTIAL")
-
-if turn_url and turn_username and turn_credential:
+if turn_urls and turn_username and turn_credential:
     ice_servers.append(
         {
-            "urls": [turn_url],
+            "urls": [url.strip() for url in turn_urls.split(",") if url.strip()],
             "username": turn_username,
             "credential": turn_credential,
         }
@@ -113,7 +112,8 @@ ctx = webrtc_streamer(
         "audio": False,
     },
     rtc_configuration={
-        "iceServers": ice_servers
+        "iceServers": ice_servers,
+        "iceTransportPolicy": "relay",
     },
     async_processing=True,
 )
