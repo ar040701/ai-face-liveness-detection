@@ -4,6 +4,7 @@ import cv2
 import os
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
 from modules.liveness import check_liveness, reset_liveness
+import requests
 
 
 st.set_page_config(
@@ -82,26 +83,40 @@ class LivenessProcessor(VideoProcessorBase):
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 
-turn_urls = os.getenv("TURN_URLS", "")
-turn_username = os.getenv("TURN_USERNAME")
-turn_credential = os.getenv("TURN_CREDENTIAL")
+def get_ice_servers():
+    metered_domain = os.getenv("METERED_DOMAIN", "").strip()
+    metered_api_key = os.getenv("METERED_API_KEY", "").strip()
 
-ice_servers = []
+    if metered_domain and metered_api_key:
+        try:
+            url = (
+                f"https://{metered_domain}/api/v1/turn/credentials"
+                f"?apiKey={metered_api_key}"
+            )
 
-if turn_urls and turn_username and turn_credential:
-    ice_servers.append(
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+
+            ice_servers = response.json()
+
+            print("Loaded ICE servers from Metered")
+            return ice_servers
+
+        except Exception as e:
+            print("Failed to load Metered ICE servers:", e)
+
+    print("Using fallback STUN server")
+
+    return [
         {
-            "urls": [url.strip() for url in turn_urls.split(",") if url.strip()],
-            "username": turn_username.strip(),
-            "credential": turn_credential.strip(),
+            "urls": [
+                "stun:stun.l.google.com:19302"
+            ]
         }
-    )
-else:
-    ice_servers.append(
-        {
-            "urls": ["stun:stun.l.google.com:19302"]
-        }
-    )
+    ]
+
+
+ice_servers = get_ice_servers()
 
 ctx = webrtc_streamer(
     key="liveness-demo",
