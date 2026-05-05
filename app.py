@@ -86,21 +86,20 @@ turn_urls = os.getenv("TURN_URLS", "")
 turn_username = os.getenv("TURN_USERNAME")
 turn_credential = os.getenv("TURN_CREDENTIAL")
 
-ice_servers = [
-    {
-        "urls": [
-            "stun:stun.relay.metered.ca:80",
-            "stun:stun.l.google.com:19302",
-        ]
-    }
-]
+ice_servers = []
 
 if turn_urls and turn_username and turn_credential:
     ice_servers.append(
         {
             "urls": [url.strip() for url in turn_urls.split(",") if url.strip()],
-            "username": turn_username,
-            "credential": turn_credential,
+            "username": turn_username.strip(),
+            "credential": turn_credential.strip(),
+        }
+    )
+else:
+    ice_servers.append(
+        {
+            "urls": ["stun:stun.l.google.com:19302"]
         }
     )
 
