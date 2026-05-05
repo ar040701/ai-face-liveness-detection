@@ -126,8 +126,7 @@ ctx = webrtc_streamer(
         "audio": False,
     },
     rtc_configuration={
-        "iceServers": ice_servers,
-        "iceTransportPolicy": "relay",
+        "iceServers": ice_servers
     },
     async_processing=True,
 )
