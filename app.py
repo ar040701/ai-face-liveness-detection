@@ -1,7 +1,7 @@
 import streamlit as st
 import av
 import cv2
-
+import os
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
 from modules.liveness import check_liveness, reset_liveness
 
@@ -82,25 +82,38 @@ class LivenessProcessor(VideoProcessorBase):
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 
+ice_servers = [
+    {
+        "urls": [
+            "stun:stun.relay.metered.ca:80",
+            "stun:stun.l.google.com:19302",
+            "stun:stun1.l.google.com:19302",
+        ]
+    }
+]
+
+turn_url = os.getenv("TURN_URL")
+turn_username = os.getenv("TURN_USERNAME")
+turn_credential = os.getenv("TURN_CREDENTIAL")
+
+if turn_url and turn_username and turn_credential:
+    ice_servers.append(
+        {
+            "urls": [turn_url],
+            "username": turn_username,
+            "credential": turn_credential,
+        }
+    )
+
 ctx = webrtc_streamer(
     key="liveness-demo",
     video_processor_factory=LivenessProcessor,
     media_stream_constraints={
         "video": True,
-        "audio": False
+        "audio": False,
     },
     rtc_configuration={
-        "iceServers": [
-            {
-                "urls": [
-                    "stun:stun.l.google.com:19302",
-                    "stun:stun1.l.google.com:19302",
-                    "stun:stun2.l.google.com:19302",
-                    "stun:stun3.l.google.com:19302",
-                    "stun:stun4.l.google.com:19302"
-                ]
-            }
-        ]
+        "iceServers": ice_servers
     },
     async_processing=True,
 )
